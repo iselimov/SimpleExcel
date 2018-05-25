@@ -120,11 +120,6 @@ public class LexerTest {
     }
 
     @Test(expected = LexerException.class)
-    public void test12() {
-        createLexer(" =A0").next().get();
-    }
-
-    @Test(expected = LexerException.class)
     public void test13() {
         createLexer(" =23").next().get();
     }
@@ -143,6 +138,6 @@ public class LexerTest {
         return new Lexer(
                 new Context(
                         new Cell[] {new Cell(0, input)},
-                        0, 0));
+                        10, 10));
     }
 }

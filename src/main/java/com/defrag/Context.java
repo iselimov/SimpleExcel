@@ -1,5 +1,6 @@
 package com.defrag;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Optional;
@@ -8,7 +9,9 @@ import java.util.Optional;
 public class Context {
 
     private final Cell[] inputData;
+    @Getter
     private final int rowsCount;
+    @Getter
     private final int colsCount;
     private int currIndex;
 
@@ -16,12 +19,8 @@ public class Context {
         return inputData[currIndex];
     }
 
-    public boolean shiftCell() {
-        if (currIndex == inputData.length - 1) {
-            return false;
-        }
-        currIndex++;
-        return true;
+    public Cell getCell(int currIndex) {
+        return inputData[currIndex];
     }
 
     public boolean jumpToCell(int index) {

@@ -5,6 +5,7 @@ import lombok.Setter;
 
 public class Cell {
 
+    @Getter
     private final int index;
     private final String input;
     private int pointerPos;
@@ -12,7 +13,6 @@ public class Cell {
     @Setter
     private String output;
     @Getter
-    @Setter
     private boolean inProcessing;
     @Getter
     @Setter
@@ -46,5 +46,9 @@ public class Cell {
             throw new IllegalStateException("Prev symbol not found");
         }
         return input.charAt(--pointerPos);
+    }
+
+    public void markAsProcessing() {
+        inProcessing = true;
     }
 }

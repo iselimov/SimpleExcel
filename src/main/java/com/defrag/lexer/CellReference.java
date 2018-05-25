@@ -5,13 +5,21 @@ import lombok.Getter;
 @Getter
 public class CellReference extends Token {
 
+    private final char colName;
+    private final int rowsSize;
+    private final int colSize;
     private int rowIndex;
+    private int colIndex;
 
-    private char colName;
-
-    protected CellReference(char colName) {
+    protected CellReference(char colName, int rowsSize, int colsSize) {
         super(Type.REFERENCE);
+        this.rowsSize = rowsSize;
+        this.colSize = colsSize;
         this.colName = Character.toUpperCase(colName);
+        colIndex = colName - 65;
+        if (colIndex < 0 || colIndex > 25 || colIndex > colSize) {
+            throw new LexerException(LexerException.Error.CELL_REF_FORMAT);
+        }
     }
 
     @Override
@@ -23,10 +31,16 @@ public class CellReference extends Token {
             throw new LexerException(LexerException.Error.CELL_REF_FORMAT);
         }
         rowIndex = Character.digit(symbol, 10) - 1;
+        if (rowIndex > rowsSize) {
+            throw new LexerException(LexerException.Error.CELL_REF_FORMAT);
+        }
     }
 
     @Override
     public Object getValue() {
-        return new int[] {rowIndex, 0};
+        if (rowIndex == 0) {
+            throw new LexerException(LexerException.Error.CELL_REF_FORMAT);
+        }
+        return rowIndex * colSize + colIndex;
     }
 }

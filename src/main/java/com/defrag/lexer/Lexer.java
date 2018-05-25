@@ -25,84 +25,97 @@ public class Lexer {
         while (tokenizeCell.hasNext()) {
             char nextSymbol = tokenizeCell.next();
             if (nextSymbol == '\'') {
-                if (tokenizeCell.isFoundEqualsSign()) {
-                    throw new LexerException(LITERAL_FORMAT);
-                }
-                if (result == null) {
-                    result = new Literal();
-                } else if (result.getType() != Token.Type.LITERAL) {
-                    throw new LexerException(LITERAL_FORMAT);
-                } else {
-                    result.addSymbol(nextSymbol);
-                }
+                result = handleQuoteSymbol(tokenizeCell, result, nextSymbol);
             } else if (nextSymbol == '=') {
-                if (tokenizeCell.isFoundEqualsSign()) {
-                    throw new LexerException(UNKNOWN_FORMAT);
-                }
-                tokenizeCell.setFoundEqualsSign(true);
+                handleEqualSymbol(tokenizeCell);
             } else if (Character.isDigit(nextSymbol)) {
-                if (result == null) {
-                    result = new Digit(nextSymbol);
-                } else {
-                    result.addSymbol(nextSymbol);
-                }
+                result = handleDigitSymbol(result, nextSymbol);
             } else if (Character.isLetter(nextSymbol)) {
-                if (result != null) {
-                    result.addSymbol(nextSymbol);
-                } else if (!tokenizeCell.isFoundEqualsSign()) {
-                    throw new LexerException(CELL_REF_FORMAT);
-                } else {
-                    result = new CellReference(nextSymbol);
-                }
+                result = handleLetterSymbol(tokenizeCell, result, nextSymbol);
             } else if (PLUS.isSuitable(nextSymbol)) {
-                if (!tokenizeCell.isFoundEqualsSign()) {
-                    throw new LexerException(CELL_REF_FORMAT);
-                }
-                tokenizeCell.setFoundOperator(true);
-                if (result != null) {
-                    tokenizeCell.prev();
+                if (handledOperatorSymbol(tokenizeCell, result)){
                     break;
                 }
                 return Optional.of(new Operation(PLUS));
             } else if (SUBTRACT.isSuitable(nextSymbol)) {
-                if (!tokenizeCell.isFoundEqualsSign()) {
-                    throw new LexerException(CELL_REF_FORMAT);
-                }
-                tokenizeCell.setFoundOperator(true);
-                if (result != null) {
-                    tokenizeCell.prev();
+                if (handledOperatorSymbol(tokenizeCell, result)){
                     break;
                 }
                 return Optional.of(new Operation(SUBTRACT));
             } else if (MULTIPLY.isSuitable(nextSymbol)) {
-                if (!tokenizeCell.isFoundEqualsSign()) {
-                    throw new LexerException(CELL_REF_FORMAT);
-                }
-                tokenizeCell.setFoundOperator(true);
-                if (result != null) {
-                    tokenizeCell.prev();
+                if (handledOperatorSymbol(tokenizeCell, result)){
                     break;
                 }
                 return Optional.of(new Operation(MULTIPLY));
             } else if (DIVIDE.isSuitable(nextSymbol)) {
-                if (!tokenizeCell.isFoundEqualsSign()) {
-                    throw new LexerException(CELL_REF_FORMAT);
-                }
-                tokenizeCell.setFoundOperator(true);
-                if (result != null) {
-                    tokenizeCell.prev();
+                if (handledOperatorSymbol(tokenizeCell, result)){
                     break;
                 }
                 return Optional.of(new Operation(DIVIDE));
             }
         }
-        boolean isDigit = result != null
-                && result.getType() == Token.Type.DIGIT;
-        if (isDigit
-                && tokenizeCell.isFoundEqualsSign()
-                && !tokenizeCell.isFoundOperator()) {
+        checkDigitConditions(tokenizeCell, result);
+        return Optional.ofNullable(result);
+    }
+
+    private boolean handledOperatorSymbol(Cell tokenizeCell, Token result) {
+        if (!tokenizeCell.isFoundEqualsSign()) {
             throw new LexerException(CELL_REF_FORMAT);
         }
-        return Optional.ofNullable(result);
+        tokenizeCell.setFoundOperator(true);
+        if (result != null) {
+            tokenizeCell.prev();
+            return true;
+        }
+        return false;
+    }
+
+    private Token handleQuoteSymbol(Cell tokenizeCell, Token result, char nextSymbol) {
+        if (tokenizeCell.isFoundEqualsSign()) {
+            throw new LexerException(LITERAL_FORMAT);
+        }
+        if (result == null) {
+            result = new Literal();
+        } else if (result.getType() != Token.Type.LITERAL) {
+            throw new LexerException(LITERAL_FORMAT);
+        } else {
+            result.addSymbol(nextSymbol);
+        }
+        return result;
+    }
+
+    private void handleEqualSymbol(Cell tokenizeCell) {
+        if (tokenizeCell.isFoundEqualsSign()) {
+            throw new LexerException(UNKNOWN_FORMAT);
+        }
+        tokenizeCell.setFoundEqualsSign(true);
+    }
+
+    private Token handleDigitSymbol(Token result, char nextSymbol) {
+        if (result == null) {
+            result = new Digit(nextSymbol);
+        } else {
+            result.addSymbol(nextSymbol);
+        }
+        return result;
+    }
+
+    private Token handleLetterSymbol(Cell tokenizeCell, Token result, char nextSymbol) {
+        if (result != null) {
+            result.addSymbol(nextSymbol);
+        } else if (!tokenizeCell.isFoundEqualsSign()) {
+            throw new LexerException(CELL_REF_FORMAT);
+        } else {
+            result = new CellReference(nextSymbol, context.getRowsCount(), context.getColsCount());
+        }
+        return result;
+    }
+
+    private void checkDigitConditions(Cell tokenizeCell, Token result) {
+        boolean isDigit = result != null
+                && result.getType() == Token.Type.DIGIT;
+        if (isDigit && tokenizeCell.isFoundEqualsSign() && !tokenizeCell.isFoundOperator()) {
+            throw new LexerException(CELL_REF_FORMAT);
+        }
     }
 }
