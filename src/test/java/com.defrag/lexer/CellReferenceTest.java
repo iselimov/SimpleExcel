@@ -37,7 +37,6 @@ public class CellReferenceTest {
     @Test(expected = LexerException.class)
     public void test5() {
         new CellReference('A', 8, 7).getValue();
-        // rowIndex * colSize + colIndex
     }
 
     @Test(expected = LexerException.class)

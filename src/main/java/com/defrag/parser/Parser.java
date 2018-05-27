@@ -25,6 +25,7 @@ public class Parser {
             CellReferenceExpression rootExpr = new CellReferenceExpression(nextCell, lexer, context);
             context.jumpToCell(nextCell.getIndex());
             rootExpr.prepare();
+            rootExpr.collapse();
         }
     }
 }

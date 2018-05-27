@@ -10,10 +10,11 @@ public class Cell {
     private final String input;
     private int pointerPos;
     @Getter
-    @Setter
     private String output;
     @Getter
     private boolean inProcessing;
+    @Getter
+    private boolean handled;
     @Getter
     @Setter
     private boolean foundEqualsSign;
@@ -48,7 +49,16 @@ public class Cell {
         return input.charAt(--pointerPos);
     }
 
+    public void setOutput(String output) {
+        this.output = output;
+        handled = true;
+    }
+
     public void markAsProcessing() {
         inProcessing = true;
+    }
+
+    public void unmarkAsProcessing() {
+        inProcessing = false;
     }
 }

@@ -33,7 +33,7 @@ public class Context {
 
     public Optional<Cell> nextUnprocessed() {
         for (Cell cell : inputData) {
-            if (!cell.isInProcessing()) {
+            if (!cell.isHandled()) {
                 return Optional.of(cell);
             }
         }

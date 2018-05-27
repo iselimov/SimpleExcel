@@ -3,47 +3,58 @@ package com.defrag.parser;
 import com.defrag.Cell;
 import com.defrag.Context;
 import com.defrag.lexer.Lexer;
+import com.defrag.lexer.Operation;
 import com.defrag.lexer.Token;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Optional;
 import java.util.Stack;
 
-import static com.defrag.lexer.Token.Type.DIGIT;
-import static com.defrag.lexer.Token.Type.LITERAL;
-import static com.defrag.lexer.Token.Type.OPERATION;
-import static com.defrag.lexer.Token.Type.REFERENCE;
+import static com.defrag.lexer.Token.Type.*;
 import static com.defrag.parser.Expression.Type.CELL_REFERENCE;
-import static com.defrag.parser.ParserException.Error.TOKENS_NOT_FOUND;
-import static com.defrag.parser.ParserException.Error.TOO_MANY_TOKENS;
+import static com.defrag.parser.ParserException.Error.*;
 
-//@Slf4j
+@Slf4j
 public class CellReferenceExpression extends Expression {
 
     private final Cell cell;
     private final Lexer lexer;
     private final Context context;
-    private Expression child;
+    @Getter private Expression child;
+    @Getter private Object value;
 
     public CellReferenceExpression(Cell cell, Lexer lexer, Context context) {
-        super(CELL_REFERENCE);
-        this.cell = cell;
-        this.lexer = lexer;
-        this.context = context;
+        this(null, cell, lexer, context);
     }
 
-    public CellReferenceExpression(Expression parent, Cell cell, Lexer lexer, Context context) {
+    private CellReferenceExpression(Expression parent, Cell cell, Lexer lexer, Context context) {
         super(CELL_REFERENCE, parent);
         this.cell = cell;
         this.lexer = lexer;
         this.context = context;
     }
 
-    public void prepare() {
-        cell.markAsProcessing();
-        prepare(this);
+    @Override
+    protected void collapse(Expression child) {
+        value = child.getValue();
+        cell.setOutput(value.toString());
+        if (child.getParent() != null) {
+            child.getParent().collapse(this);
+        }
+    }
+    public void collapse() {
+        if (getParent() == null) {
+            leftLeaf(child).ifPresent(next -> next.collapse(next));
+        }
     }
 
-    private void prepare(Expression parent) {
+    public void prepare() {
+        if (cell.isHandled()) {
+            return;
+        }
+        log.info("Cell preparing started with index {}", cell.getIndex());
+        cell.markAsProcessing();
         Stack<Token> operands = new Stack<>();
         Stack<Token> operators = new Stack<>();
         Optional<Token> next;
@@ -59,52 +70,63 @@ public class CellReferenceExpression extends Expression {
             throw new ParserException(TOKENS_NOT_FOUND);
         }
         if (operators.isEmpty()) {
-            prepareOnlyOperands(parent, operands, operators);
+            prepareOnlyOperands(this, operands);
         } else {
-            prepareOperatorsAndOperands(parent, operands, operators);
+            prepareOperatorsAndOperands(this, operands, operators);
         }
+        log.info("Cell preparing finished with index {}", cell.getIndex());
+        cell.unmarkAsProcessing();
     }
 
-    private void prepareOnlyOperands(Expression parent, Stack<Token> operands, Stack<Token> operators) {
+    private void prepareOnlyOperands(Expression parent, Stack<Token> operands) {
         Token nextToken = operands.pop();
-        if (!operators.isEmpty()) {
+        if (!operands.isEmpty()) {
             throw new ParserException(TOO_MANY_TOKENS);
         }
-        Expression expr = prepareExpression(parent, nextToken, cell);
-        if (expr.getType() == CELL_REFERENCE) {
-            prepare(expr);
-        }
+        prepareExpression(parent, nextToken);
     }
 
-    private void prepareOperatorsAndOperands(Expression parent, Stack<Token> operands, Stack<Token> operators) {
-        while (!operators.isEmpty()) {
-            OperationExpression operatorExpr = new OperationExpression(parent);
-            Token operator = operators.pop();
-            Expression rightExpr = prepareExpression(parent, operator, cell);
-            if (rightExpr.getType() == CELL_REFERENCE) {
-                prepare(rightExpr);
+    private Expression prepareOperatorsAndOperands(Expression parent, Stack<Token> operands, Stack<Token> operators) {
+        Operation operator = (Operation) operators.pop();
+        OperationExpression operatorExpr = new OperationExpression(parent, (Operation.Type) operator.getValue());
+        Token rightOperand = operands.pop();
+        Expression rightExpr = prepareExpression(operatorExpr, rightOperand);
+        operatorExpr.setRight(rightExpr);
+        if (operators.isEmpty()) {
+            if (operands.isEmpty()) {
+                throw new ParserException(OPERATION_INVALID_ARGS);
             }
-            operatorExpr.setRight(rightExpr);
             Token leftOperand = operands.pop();
-            Expression leftExpr = prepareExpression(parent, leftOperand, cell);
-            if (rightExpr.getType() == CELL_REFERENCE) {
-                prepare(leftExpr);
+            Expression leftExpr = prepareExpression(operatorExpr, leftOperand);
+            operatorExpr.setLeft(leftExpr);
+            if (!operands.isEmpty() || !operators.isEmpty()) {
+                throw new ParserException(OPERATION_INVALID_ARGS);
             }
+        } else {
+            Expression leftExpr = prepareOperatorsAndOperands(operatorExpr, operands, operators);
+            operatorExpr.setLeft(leftExpr);
         }
+        child = operatorExpr;
+        return operatorExpr;
     }
 
-    private Expression prepareExpression(Expression parent, Token nextToken, Cell currCell) {
+    private Expression prepareExpression(Expression parent, Token nextToken) {
         Expression result;
         if (nextToken.getType() == REFERENCE) {
             int cellIndex = (int) nextToken.getValue();
             Cell referenceCell = context.getCell(cellIndex);
-            result = new CellReferenceExpression(parent, referenceCell, lexer, context);
-            referenceCell.markAsProcessing();
+            if (referenceCell.isInProcessing()) {
+                throw new ParserException(CYCLE_WAS_FOUND);
+            }
+            CellReferenceExpression expr = new CellReferenceExpression(parent, referenceCell, lexer, context);
             context.jumpToCell(cellIndex);
+            expr.prepare();
+            expr.collapse();
+            result = expr;
         } else if (nextToken.getType() == DIGIT) {
-            result = new DigitExpression(parent, currCell, (Integer) nextToken.getValue());
+            result = new DigitExpression(parent, (Integer) nextToken.getValue());
         } else if (nextToken.getType() == LITERAL) {
-            result = new LiteralExpression(parent, currCell, (String) nextToken.getValue());
+            result = new LiteralExpression(parent, (String) nextToken.getValue());
         } else {
             throw new ParserException(TOKENS_NOT_FOUND);
         }

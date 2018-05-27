@@ -8,7 +8,7 @@ public class CellReference extends Token {
     private final char colName;
     private final int rowsSize;
     private final int colSize;
-    private int rowIndex;
+    private int rowIndex = -1;
     private int colIndex;
 
     protected CellReference(char colName, int rowsSize, int colsSize) {
@@ -38,7 +38,7 @@ public class CellReference extends Token {
 
     @Override
     public Object getValue() {
-        if (rowIndex == 0) {
+        if (rowIndex == -1) {
             throw new LexerException(LexerException.Error.CELL_REF_FORMAT);
         }
         return rowIndex * colSize + colIndex;
