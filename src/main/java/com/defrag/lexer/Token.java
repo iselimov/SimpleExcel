@@ -14,11 +14,11 @@ public abstract class Token {
     @Getter
     private final Type type;
 
-    protected Token(Type type) {
+    Token(Type type) {
         this.type = type;
     }
 
-    public abstract void addSymbol(char symbol);
+    abstract void addSymbol(char symbol);
 
     public abstract Object getValue();
 }

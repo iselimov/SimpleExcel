@@ -2,25 +2,31 @@ package com.defrag.lexer;
 
 import static com.defrag.lexer.LexerException.Error.DIGIT_FORMAT;
 
-public class Digit extends Token {
+class Digit extends Token {
 
+    private final int cellIndex;
     private StringBuilder digit = new StringBuilder();
 
-    public Digit(char firstSymbol) {
+    Digit(int cellIndex, char firstSymbol) {
         super(Type.DIGIT);
+        this.cellIndex = cellIndex;
         digit.append(Character.digit(firstSymbol, 10));
     }
 
     @Override
-    public void addSymbol(char symbol) {
+    void addSymbol(char symbol) {
         if (!Character.isDigit(symbol)) {
-            throw new LexerException(DIGIT_FORMAT);
+            throw new LexerException(DIGIT_FORMAT, cellIndex);
         }
         digit.append(Character.digit(symbol, 10));
     }
 
     @Override
     public Object getValue() {
-        return Integer.valueOf(digit.toString());
+        try {
+            return Integer.valueOf(digit.toString());
+        } catch (NumberFormatException e) {
+            throw new LexerException(DIGIT_FORMAT, cellIndex);
+        }
     }
 }

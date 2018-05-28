@@ -29,7 +29,7 @@ public class Lexer {
             } else if (nextSymbol == '=') {
                 handleEqualSymbol(tokenizeCell);
             } else if (Character.isDigit(nextSymbol)) {
-                result = handleDigitSymbol(result, nextSymbol);
+                result = handleDigitSymbol(tokenizeCell, result, nextSymbol);
             } else if (Character.isLetter(nextSymbol)) {
                 result = handleLetterSymbol(tokenizeCell, result, nextSymbol);
             } else if (PLUS.isSuitable(nextSymbol)) {
@@ -60,7 +60,7 @@ public class Lexer {
 
     private boolean handledOperatorSymbol(Cell tokenizeCell, Token result) {
         if (!tokenizeCell.isFoundEqualsSign()) {
-            throw new LexerException(CELL_REF_FORMAT);
+            throw new LexerException(CELL_REF_FORMAT, tokenizeCell.getIndex());
         }
         tokenizeCell.setFoundOperator(true);
         if (result != null) {
@@ -72,12 +72,12 @@ public class Lexer {
 
     private Token handleQuoteSymbol(Cell tokenizeCell, Token result, char nextSymbol) {
         if (tokenizeCell.isFoundEqualsSign()) {
-            throw new LexerException(LITERAL_FORMAT);
+            throw new LexerException(LITERAL_FORMAT, tokenizeCell.getIndex());
         }
         if (result == null) {
             result = new Literal();
         } else if (result.getType() != Token.Type.LITERAL) {
-            throw new LexerException(LITERAL_FORMAT);
+            throw new LexerException(LITERAL_FORMAT, tokenizeCell.getIndex());
         } else {
             result.addSymbol(nextSymbol);
         }
@@ -86,14 +86,14 @@ public class Lexer {
 
     private void handleEqualSymbol(Cell tokenizeCell) {
         if (tokenizeCell.isFoundEqualsSign()) {
-            throw new LexerException(UNKNOWN_FORMAT);
+            throw new LexerException(UNKNOWN_FORMAT, tokenizeCell.getIndex());
         }
         tokenizeCell.setFoundEqualsSign(true);
     }
 
-    private Token handleDigitSymbol(Token result, char nextSymbol) {
+    private Token handleDigitSymbol(Cell tokenizeCell, Token result, char nextSymbol) {
         if (result == null) {
-            result = new Digit(nextSymbol);
+            result = new Digit(tokenizeCell.getIndex(), nextSymbol);
         } else {
             result.addSymbol(nextSymbol);
         }
@@ -104,9 +104,9 @@ public class Lexer {
         if (result != null) {
             result.addSymbol(nextSymbol);
         } else if (!tokenizeCell.isFoundEqualsSign()) {
-            throw new LexerException(CELL_REF_FORMAT);
+            throw new LexerException(CELL_REF_FORMAT, tokenizeCell.getIndex());
         } else {
-            result = new CellReference(nextSymbol, context.getRowsCount(), context.getColsCount());
+            result = new CellReference(tokenizeCell.getIndex(), nextSymbol, context.getRowsCount(), context.getColsCount());
         }
         return result;
     }
@@ -115,7 +115,7 @@ public class Lexer {
         boolean isDigit = result != null
                 && result.getType() == Token.Type.DIGIT;
         if (isDigit && tokenizeCell.isFoundEqualsSign() && !tokenizeCell.isFoundOperator()) {
-            throw new LexerException(CELL_REF_FORMAT);
+            throw new LexerException(CELL_REF_FORMAT, tokenizeCell.getIndex());
         }
     }
 }

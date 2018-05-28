@@ -5,22 +5,15 @@ import lombok.Setter;
 
 public class Cell {
 
-    @Getter
-    private final int index;
-    private final String input;
+    @Getter private final int index;
+    @Getter private final String input;
     private int pointerPos;
-    @Getter
-    private String output;
-    @Getter
-    private boolean inProcessing;
-    @Getter
-    private boolean handled;
-    @Getter
-    @Setter
-    private boolean foundEqualsSign;
-    @Getter
-    @Setter
-    private boolean foundOperator;
+    @Getter private Object output;
+    @Getter private boolean inProcessing;
+    @Getter private boolean handled;
+    @Getter private boolean withErrors;
+    @Getter @Setter private boolean foundEqualsSign;
+    @Getter @Setter private boolean foundOperator;
 
     public Cell(int index, String input) {
         this.index = index;
@@ -49,7 +42,7 @@ public class Cell {
         return input.charAt(--pointerPos);
     }
 
-    public void setOutput(String output) {
+    public void setOutput(Object output) {
         this.output = output;
         handled = true;
     }
@@ -60,5 +53,9 @@ public class Cell {
 
     public void unmarkAsProcessing() {
         inProcessing = false;
+    }
+
+    public void markAsHasErrors() {
+        withErrors = true;
     }
 }

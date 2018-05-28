@@ -19,7 +19,10 @@ public class Main {
         new Parser(new Context(data, rowSize, colSize)).parse();
         for (int i = 0; i < rowSize; i ++) {
             for (int j = 0; j < colSize; j++) {
-                System.out.print(data[i * colSize + j].getOutput() + " ");
+                System.out.print(data[i * colSize + j].getOutput());
+                if (j != colSize - 1) {
+                    System.out.print(" ");
+                }
             }
             System.out.println();
         }

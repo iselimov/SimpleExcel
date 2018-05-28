@@ -9,10 +9,8 @@ import java.util.Optional;
 public class Context {
 
     private final Cell[] inputData;
-    @Getter
-    private final int rowsCount;
-    @Getter
-    private final int colsCount;
+    @Getter private final int rowsCount;
+    @Getter private final int colsCount;
     private int currIndex;
 
     public Cell getCurrentCell() {
@@ -33,7 +31,7 @@ public class Context {
 
     public Optional<Cell> nextUnprocessed() {
         for (Cell cell : inputData) {
-            if (!cell.isHandled()) {
+            if (!cell.isHandled() && !cell.isWithErrors()) {
                 return Optional.of(cell);
             }
         }

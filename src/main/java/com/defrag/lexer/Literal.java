@@ -1,15 +1,15 @@
 package com.defrag.lexer;
 
-public class Literal extends Token {
+class Literal extends Token {
 
     private StringBuilder text = new StringBuilder();
 
-    public Literal() {
+    Literal() {
         super(Type.LITERAL);
     }
 
     @Override
-    public void addSymbol(char symbol) {
+    void addSymbol(char symbol) {
         text.append(symbol);
     }
 

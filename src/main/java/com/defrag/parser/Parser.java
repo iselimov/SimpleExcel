@@ -23,9 +23,7 @@ public class Parser {
         while ((next = context.nextUnprocessed()).isPresent()) {
             Cell nextCell = next.get();
             CellReferenceExpression rootExpr = new CellReferenceExpression(nextCell, lexer, context);
-            context.jumpToCell(nextCell.getIndex());
-            rootExpr.prepare();
-            rootExpr.collapse();
+            rootExpr.process();
         }
     }
 }

@@ -5,8 +5,11 @@ import lombok.RequiredArgsConstructor;
 
 public class LexerException extends RuntimeException {
 
-    public LexerException(Error error) {
-        super(error.getText());
+    @Getter private final int cellIndex;
+
+    LexerException(Error error, int cellIndex) {
+        super("#" + error.getText());
+        this.cellIndex = cellIndex;
     }
 
     @Getter

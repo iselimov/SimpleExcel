@@ -3,6 +3,7 @@ package com.defrag.parser;
 import com.defrag.Cell;
 import com.defrag.Context;
 import com.defrag.lexer.Lexer;
+import com.defrag.lexer.LexerException;
 import com.defrag.lexer.Operation;
 import com.defrag.lexer.Token;
 import lombok.Getter;
@@ -11,20 +12,26 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.Optional;
 import java.util.Stack;
 
-import static com.defrag.lexer.Token.Type.*;
+import static com.defrag.lexer.Token.Type.DIGIT;
+import static com.defrag.lexer.Token.Type.LITERAL;
+import static com.defrag.lexer.Token.Type.OPERATION;
+import static com.defrag.lexer.Token.Type.REFERENCE;
 import static com.defrag.parser.Expression.Type.CELL_REFERENCE;
-import static com.defrag.parser.ParserException.Error.*;
+import static com.defrag.parser.ParserException.Error.CYCLE_WAS_FOUND;
+import static com.defrag.parser.ParserException.Error.OPERATION_INVALID_ARGS;
+import static com.defrag.parser.ParserException.Error.TOKENS_NOT_FOUND;
+import static com.defrag.parser.ParserException.Error.TOO_MANY_TOKENS;
 
 @Slf4j
 public class CellReferenceExpression extends Expression {
 
-    private final Cell cell;
+    @Getter private final Cell cell;
     private final Lexer lexer;
     private final Context context;
     @Getter private Expression child;
-    @Getter private Object value;
+    private Object value;
 
-    public CellReferenceExpression(Cell cell, Lexer lexer, Context context) {
+    CellReferenceExpression(Cell cell, Lexer lexer, Context context) {
         this(null, cell, lexer, context);
     }
 
@@ -36,20 +43,36 @@ public class CellReferenceExpression extends Expression {
     }
 
     @Override
-    protected void collapse(Expression child) {
+    void collapse(Expression child) {
         value = child.getValue();
-        cell.setOutput(value.toString());
+        cell.setOutput(value);
         if (child.getParent() != null) {
             child.getParent().collapse(this);
         }
     }
-    public void collapse() {
-        if (getParent() == null) {
-            leftLeaf(child).ifPresent(next -> next.collapse(next));
+
+    @Override
+    Object getValue() {
+        return value == null ? cell.getOutput() : value;
+    }
+
+    void process() {
+        if (cell.isWithErrors()) {
+            handleParserException(this, cell.getOutput().toString());
+            return;
+        }
+        context.jumpToCell(cell.getIndex());
+        try {
+            prepare();
+            collapse();
+        } catch (LexerException e) {
+            handleParserException(this, e.getMessage());
+        } catch (ParserException e) {
+            handleParserException(e.getErrNode(), e.getMessage());
         }
     }
 
-    public void prepare() {
+    private void prepare() {
         if (cell.isHandled()) {
             return;
         }
@@ -67,7 +90,7 @@ public class CellReferenceExpression extends Expression {
             }
         }
         if (operands.isEmpty()) {
-            throw new ParserException(TOKENS_NOT_FOUND);
+            throw new ParserException(TOKENS_NOT_FOUND, this);
         }
         if (operators.isEmpty()) {
             prepareOnlyOperands(this, operands);
@@ -78,10 +101,34 @@ public class CellReferenceExpression extends Expression {
         cell.unmarkAsProcessing();
     }
 
+    private void collapse() {
+        if (getParent() != null || cell.isWithErrors()) {
+            return;
+        }
+        Expression leftLeaf = leftLeaf(child);
+        leftLeaf.collapse(leftLeaf);
+    }
+
+    private void handleParserException(Expression errNode, String message) {
+        CellReferenceExpression cellRef = (CellReferenceExpression) errNode;
+        Cell errorCell = cellRef.getCell();
+        errorCell.setOutput(message);
+        errorCell.markAsHasErrors();
+        Expression parent = cellRef.getParent();
+        while (parent != null) {
+            if (parent.getType() == CELL_REFERENCE) {
+                CellReferenceExpression parentExpr = (CellReferenceExpression) parent;
+                parentExpr.handleParserException(parentExpr, message);
+                break;
+            }
+            parent = parent.getParent();
+        }
+    }
+
     private void prepareOnlyOperands(Expression parent, Stack<Token> operands) {
         Token nextToken = operands.pop();
         if (!operands.isEmpty()) {
-            throw new ParserException(TOO_MANY_TOKENS);
+            throw new ParserException(TOO_MANY_TOKENS, this);
         }
         prepareExpression(parent, nextToken);
     }
@@ -94,13 +141,15 @@ public class CellReferenceExpression extends Expression {
         operatorExpr.setRight(rightExpr);
         if (operators.isEmpty()) {
             if (operands.isEmpty()) {
-                throw new ParserException(OPERATION_INVALID_ARGS);
+                throw new ParserException(OPERATION_INVALID_ARGS,
+                        rightExpr.getType() == CELL_REFERENCE ? (CellReferenceExpression) rightExpr : this);
             }
             Token leftOperand = operands.pop();
             Expression leftExpr = prepareExpression(operatorExpr, leftOperand);
             operatorExpr.setLeft(leftExpr);
             if (!operands.isEmpty() || !operators.isEmpty()) {
-                throw new ParserException(OPERATION_INVALID_ARGS);
+                throw new ParserException(OPERATION_INVALID_ARGS,
+                        leftExpr.getType() == CELL_REFERENCE ? (CellReferenceExpression) leftExpr : this);
             }
         } else {
             Expression leftExpr = prepareOperatorsAndOperands(operatorExpr, operands, operators);
@@ -116,19 +165,17 @@ public class CellReferenceExpression extends Expression {
             int cellIndex = (int) nextToken.getValue();
             Cell referenceCell = context.getCell(cellIndex);
             if (referenceCell.isInProcessing()) {
-                throw new ParserException(CYCLE_WAS_FOUND);
+                throw new ParserException(CYCLE_WAS_FOUND, this);
             }
             CellReferenceExpression expr = new CellReferenceExpression(parent, referenceCell, lexer, context);
-            context.jumpToCell(cellIndex);
-            expr.prepare();
-            expr.collapse();
+            expr.process();
             result = expr;
         } else if (nextToken.getType() == DIGIT) {
             result = new DigitExpression(parent, (Integer) nextToken.getValue());
         } else if (nextToken.getType() == LITERAL) {
             result = new LiteralExpression(parent, (String) nextToken.getValue());
         } else {
-            throw new ParserException(TOKENS_NOT_FOUND);
+            throw new ParserException(TOKENS_NOT_FOUND, this);
         }
         child = result;
         return result;

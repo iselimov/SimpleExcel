@@ -8,7 +8,7 @@ import java.util.Optional;
 import static com.defrag.parser.Expression.Type.CELL_REFERENCE;
 import static com.defrag.parser.Expression.Type.OPERATOR;
 
-public abstract class Expression {
+abstract class Expression {
 
     @Getter private final Type type;
     @Getter(AccessLevel.PROTECTED) private Expression parent;
@@ -20,25 +20,29 @@ public abstract class Expression {
         LITERAL
     }
 
-    protected Expression(Type type, Expression parent) {
+    Expression(Type type, Expression parent) {
         this.type = type;
         this.parent = parent;
     }
 
-    protected Optional<Expression> leftLeaf(Expression next) {
+    Expression leftLeaf(Expression root) {
+        Expression next = root;
+        Expression prev = next;
         while (next != null) {
             if (next.getType() == CELL_REFERENCE) {
+                prev = next;
                 next = ((CellReferenceExpression)next).getChild();
             } else if (next.getType() == OPERATOR) {
+                prev = next;
                 next = ((OperationExpression)next).getLeft();
             } else {
                 break;
             }
         }
-        return Optional.ofNullable(next);
+        return Optional.ofNullable(next).orElse(prev);
     }
 
-    protected abstract void collapse(Expression child);
+    abstract void collapse(Expression child);
 
-    protected abstract Object getValue();
+    abstract Object getValue();
 }

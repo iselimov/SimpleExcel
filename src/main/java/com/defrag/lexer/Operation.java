@@ -4,13 +4,14 @@ public class Operation extends Token {
 
     private final Type value;
 
-    public Operation(Type value) {
+    Operation(Type value) {
         super(Token.Type.OPERATION);
         this.value = value;
     }
 
     @Override
-    public void addSymbol(char symbol) {
+    void addSymbol(char symbol) {
+        // do nothing here
     }
 
     @Override
