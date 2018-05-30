@@ -4,15 +4,7 @@ import lombok.Getter;
 
 public abstract class Token {
 
-    public enum Type {
-        REFERENCE,
-        DIGIT,
-        OPERATION,
-        LITERAL
-    }
-
-    @Getter
-    private final Type type;
+    @Getter private final Type type;
 
     Token(Type type) {
         this.type = type;
@@ -21,4 +13,11 @@ public abstract class Token {
     abstract void addSymbol(char symbol);
 
     public abstract Object getValue();
+
+    public enum Type {
+        REFERENCE,
+        DIGIT,
+        OPERATION,
+        LITERAL
+    }
 }

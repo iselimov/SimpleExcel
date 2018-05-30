@@ -1,8 +1,11 @@
 package com.defrag.lexer;
 
+/**
+ * Text non terminal representation
+ */
 class Literal extends Token {
 
-    private StringBuilder text = new StringBuilder();
+    private final StringBuilder text = new StringBuilder();
 
     Literal() {
         super(Type.LITERAL);

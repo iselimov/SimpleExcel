@@ -13,6 +13,9 @@ import static com.defrag.parser.ParserException.Error.INTEGER_OVERFLOW;
 import static com.defrag.parser.ParserException.Error.OPERATION_INVALID_ARGS;
 import static com.defrag.parser.ParserException.Error.UNKNOWN_OPERATION;
 
+/**
+ * Operation node of AST
+ */
 class OperationExpression extends Expression {
 
     private final OperationType operationType;
@@ -27,12 +30,20 @@ class OperationExpression extends Expression {
         operationType = OperationType.define(tokenOpType);
     }
 
+    /**
+     * if we try to collapse this node while some of child
+     * has literal node, we should throw an exception.
+     * Otherwise we should traverse down to right child leaf
+     * and collapse it also.
+     *
+     * @param child node to collapse
+     */
     @Override
     void collapse(Expression child) {
         if (child.getType() == Type.CELL_REFERENCE) {
             Object childValue = child.getValue();
             if (childValue instanceof String) {
-                throw new ParserException(OPERATION_INVALID_ARGS, (CellReferenceExpression) child);
+                throw new ParserException(OPERATION_INVALID_ARGS, this);
             }
         }
         if (child == left) {
@@ -47,14 +58,7 @@ class OperationExpression extends Expression {
         try {
             value = operationType.op.apply(leftVal, rightVal);
         } catch (ParserException e) {
-            Expression parent = child;
-            while (parent != null) {
-                if (parent.getType() == Type.CELL_REFERENCE) {
-                    break;
-                }
-                parent = parent.getParent();
-            }
-            throw new ParserException(e.getError(), (CellReferenceExpression) parent);
+            throw new ParserException(e.getError(), this);
         }
         getParent().collapse(this);
     }

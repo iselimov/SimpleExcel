@@ -5,6 +5,9 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.Optional;
 
+/**
+ * Context for both lexer and parser
+ */
 @RequiredArgsConstructor
 public class Context {
 
@@ -17,18 +20,24 @@ public class Context {
         return inputData[currIndex];
     }
 
-    public Cell getCell(int currIndex) {
-        return inputData[currIndex];
+    /**
+     * @param index index of cell to need
+     * @return need cell by index
+     */
+    public Cell getCell(int index) {
+        return inputData[index];
     }
 
-    public boolean jumpToCell(int index) {
-        if (index >= inputData.length) {
-            return false;
-        }
+    /**
+     * @param index some index that is changing current index of context
+     */
+    public void jumpToCell(int index) {
         currIndex = index;
-        return true;
     }
 
+    /**
+     * @return cell if it was not handled and has not errors
+     */
     public Optional<Cell> nextUnprocessed() {
         for (Cell cell : inputData) {
             if (!cell.isHandled() && !cell.isWithErrors()) {

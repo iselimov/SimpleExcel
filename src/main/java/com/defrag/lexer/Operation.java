@@ -1,5 +1,8 @@
 package com.defrag.lexer;
 
+/**
+ * Operation terminal representation
+ */
 public class Operation extends Token {
 
     private final Type value;
@@ -25,13 +28,13 @@ public class Operation extends Token {
         MULTIPLY('*'),
         DIVIDE('/');
 
-        public final char val;
+        private final char val;
         Type(char val) {
             this.val = val;
         }
 
         public boolean isSuitable(char op) {
-            return  val == op;
+            return val == op;
         }
     }
 }

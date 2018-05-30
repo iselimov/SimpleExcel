@@ -2,6 +2,9 @@ package com.defrag.lexer;
 
 import lombok.Getter;
 
+/**
+ * Cell reference non terminal representation
+ */
 @Getter
 public class CellReference extends Token {
 

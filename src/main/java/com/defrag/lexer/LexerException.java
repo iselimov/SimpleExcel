@@ -15,10 +15,10 @@ public class LexerException extends RuntimeException {
     @Getter
     @RequiredArgsConstructor
     public enum Error {
-        DIGIT_FORMAT("Неверный формат числа"),
-        LITERAL_FORMAT("Символ ' может использоваться только в указании строковой константы"),
-        CELL_REF_FORMAT("Неверный формат ссылки на ячейку"),
-        UNKNOWN_FORMAT("Неизвестный формат ячейки")
+        DIGIT_FORMAT("Wring digit format"),
+        LITERAL_FORMAT("Symbol ' can use only with string constant"),
+        CELL_REF_FORMAT("Wrong format reference to cell"),
+        UNKNOWN_FORMAT("Unknown cell format")
 
         ;
 

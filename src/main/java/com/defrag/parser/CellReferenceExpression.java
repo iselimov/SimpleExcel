@@ -22,8 +22,13 @@ import static com.defrag.parser.ParserException.Error.OPERATION_INVALID_ARGS;
 import static com.defrag.parser.ParserException.Error.TOKENS_NOT_FOUND;
 import static com.defrag.parser.ParserException.Error.TOO_MANY_TOKENS;
 
+/**
+ * The cell reference node of AST, which encapsulates preparing AST for parsing
+ * and also collapsing it's nodes with result setting to
+ * referenced cell
+ */
 @Slf4j
-public class CellReferenceExpression extends Expression {
+class CellReferenceExpression extends Expression {
 
     @Getter private final Cell cell;
     private final Lexer lexer;
@@ -46,8 +51,8 @@ public class CellReferenceExpression extends Expression {
     void collapse(Expression child) {
         value = child.getValue();
         cell.setOutput(value);
-        if (child.getParent() != null) {
-            child.getParent().collapse(this);
+        if (getParent() != null) {
+            getParent().collapse(this);
         }
     }
 
@@ -76,7 +81,7 @@ public class CellReferenceExpression extends Expression {
         if (cell.isHandled()) {
             return;
         }
-        log.info("Cell preparing started with index {}", cell.getIndex());
+        log.debug("Cell preparing started with index {}", cell.getIndex());
         cell.markAsProcessing();
         Stack<Token> operands = new Stack<>();
         Stack<Token> operators = new Stack<>();
@@ -92,12 +97,13 @@ public class CellReferenceExpression extends Expression {
         if (operands.isEmpty()) {
             throw new ParserException(TOKENS_NOT_FOUND, this);
         }
+        cell.refreshLexerInfo();
         if (operators.isEmpty()) {
             prepareOnlyOperands(this, operands);
         } else {
             prepareOperatorsAndOperands(this, operands, operators);
         }
-        log.info("Cell preparing finished with index {}", cell.getIndex());
+        log.debug("Cell preparing finished with index {}", cell.getIndex());
         cell.unmarkAsProcessing();
     }
 
@@ -110,15 +116,14 @@ public class CellReferenceExpression extends Expression {
     }
 
     private void handleParserException(Expression errNode, String message) {
-        CellReferenceExpression cellRef = (CellReferenceExpression) errNode;
-        Cell errorCell = cellRef.getCell();
-        errorCell.setOutput(message);
-        errorCell.markAsHasErrors();
-        Expression parent = cellRef.getParent();
+        Expression parent = errNode;
         while (parent != null) {
             if (parent.getType() == CELL_REFERENCE) {
                 CellReferenceExpression parentExpr = (CellReferenceExpression) parent;
-                parentExpr.handleParserException(parentExpr, message);
+                Cell errorCell = parentExpr.getCell();
+                errorCell.setOutput(message);
+                errorCell.markAsHasErrors();
+                handleParserException(parentExpr.getParent(), message);
                 break;
             }
             parent = parent.getParent();
@@ -141,15 +146,13 @@ public class CellReferenceExpression extends Expression {
         operatorExpr.setRight(rightExpr);
         if (operators.isEmpty()) {
             if (operands.isEmpty()) {
-                throw new ParserException(OPERATION_INVALID_ARGS,
-                        rightExpr.getType() == CELL_REFERENCE ? (CellReferenceExpression) rightExpr : this);
+                throw new ParserException(OPERATION_INVALID_ARGS, operatorExpr);
             }
             Token leftOperand = operands.pop();
             Expression leftExpr = prepareExpression(operatorExpr, leftOperand);
             operatorExpr.setLeft(leftExpr);
             if (!operands.isEmpty() || !operators.isEmpty()) {
-                throw new ParserException(OPERATION_INVALID_ARGS,
-                        leftExpr.getType() == CELL_REFERENCE ? (CellReferenceExpression) leftExpr : this);
+                throw new ParserException(OPERATION_INVALID_ARGS, operatorExpr);
             }
         } else {
             Expression leftExpr = prepareOperatorsAndOperands(operatorExpr, operands, operators);

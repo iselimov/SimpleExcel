@@ -1,5 +1,5 @@
 3 4
 
 12              =C2         3      'Sample
-=A1+B1*C1/5     =A2*B1      =B3-   'Spread
-'Test           =D1       5      'Sheet
+=A1+B1*2/5     =A2*B1      =B3-1   'Spread
+'Test           =5+3       5      'Sheet

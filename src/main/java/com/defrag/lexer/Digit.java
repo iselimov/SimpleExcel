@@ -2,10 +2,13 @@ package com.defrag.lexer;
 
 import static com.defrag.lexer.LexerException.Error.DIGIT_FORMAT;
 
+/**
+ * Non negative integer number non terminal representation
+ */
 class Digit extends Token {
 
     private final int cellIndex;
-    private StringBuilder digit = new StringBuilder();
+    private final StringBuilder digit = new StringBuilder();
 
     Digit(int cellIndex, char firstSymbol) {
         super(Type.DIGIT);

@@ -9,7 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class LexerTest {
 
     @Test
-    public void test1() {
+    public void testForCellRefToken() {
         Lexer lexer = createLexer("=A2");
         CellReference ref = (CellReference) lexer.next().get();
         assertThat(ref.getColName()).isEqualTo('A');
@@ -18,7 +18,7 @@ public class LexerTest {
     }
 
     @Test
-    public void test2() {
+    public void testForOneDigitToken() {
         Lexer lexer = createLexer("2");
         Digit digit = (Digit) lexer.next().get();
         assertThat(digit.getValue()).isEqualTo(2);
@@ -26,7 +26,7 @@ public class LexerTest {
     }
 
     @Test
-    public void test3() {
+    public void testForTwoDigitToken() {
         Lexer lexer = createLexer("23");
         Digit digit = (Digit) lexer.next().get();
         assertThat(digit.getValue()).isEqualTo(23);
@@ -34,17 +34,12 @@ public class LexerTest {
     }
 
     @Test(expected = LexerException.class)
-    public void test4() {
+    public void testForWrongRefToken() {
         createLexer("A2").next();
     }
 
-    @Test(expected = LexerException.class)
-    public void test5() {
-        createLexer("gfsdf").next();
-    }
-
     @Test
-    public void test6() {
+    public void testForLiteralToken() {
         Lexer lexer = createLexer("'g4sg");
         Literal str = (Literal) lexer.next().get();
         assertThat(str.getValue()).isEqualTo("g4sg");
@@ -52,12 +47,12 @@ public class LexerTest {
     }
 
     @Test(expected = LexerException.class)
-    public void test7() {
-        createLexer("4+2").next();
+    public void testForWrongLiteralToken() {
+        createLexer("gfsdf").next();
     }
 
     @Test
-    public void test8() {
+    public void testForCellRefWithOperationToken() {
         Lexer lexer = createLexer(" =4 +2");
         Digit first = (Digit) lexer.next().get();
         assertThat(first.getValue()).isEqualTo(4);
@@ -69,7 +64,7 @@ public class LexerTest {
     }
 
     @Test
-    public void test9() {
+    public void testForCellRefWithComplexOperationToken() {
         Lexer lexer = createLexer(" =41 +2-5/33*  10");
         Digit first = (Digit) lexer.next().get();
         assertThat(first.getValue()).isEqualTo(41);
@@ -92,8 +87,13 @@ public class LexerTest {
         assertThat(lexer.next()).isNotPresent();
     }
 
+    @Test(expected = LexerException.class)
+    public void testForWrongOperationToken() {
+        createLexer("4+2").next();
+    }
+
     @Test
-    public void test10() {
+    public void testForCellRefWithAnotherCellRefToken() {
         Lexer lexer = createLexer(" =4 +A5-B2/3");
         Digit first = (Digit) lexer.next().get();
         assertThat(first.getValue()).isEqualTo(4);
@@ -115,22 +115,22 @@ public class LexerTest {
     }
 
     @Test(expected = LexerException.class)
-    public void test11() {
+    public void testForWrongCellRefToken() {
         createLexer(" =AA5").next().get();
     }
 
     @Test(expected = LexerException.class)
-    public void test13() {
+    public void testForWrongCellRefDigitToken() {
         createLexer(" =23").next().get();
     }
 
     @Test(expected = LexerException.class)
-    public void test14() {
+    public void testForWrongCellRefLiteralTokent() {
         createLexer(" ='fsdfdsfsd").next().get();
     }
 
     @Test(expected = LexerException.class)
-    public void test15() {
+    public void testForTooMuchEqualsSings() {
         createLexer("=A3=A2").next().get();
     }
 

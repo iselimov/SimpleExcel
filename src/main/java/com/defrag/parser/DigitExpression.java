@@ -1,5 +1,8 @@
 package com.defrag.parser;
 
+/**
+ * Digit node of AST
+ */
 class DigitExpression extends Expression {
 
     private int value;

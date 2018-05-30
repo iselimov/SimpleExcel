@@ -1,5 +1,8 @@
 package com.defrag.parser;
 
+/**
+ * Literal node of AST
+ */
 class LiteralExpression extends Expression {
 
     private final String text;

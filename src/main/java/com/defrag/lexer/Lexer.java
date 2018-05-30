@@ -14,6 +14,9 @@ import static com.defrag.lexer.Operation.Type.MULTIPLY;
 import static com.defrag.lexer.Operation.Type.PLUS;
 import static com.defrag.lexer.Operation.Type.SUBTRACT;
 
+/**
+ * Lexer for grammar representation
+ */
 @RequiredArgsConstructor
 public class Lexer {
 
