@@ -81,30 +81,33 @@ class CellReferenceExpression extends Expression {
         if (cell.isHandled()) {
             return;
         }
-        log.debug("Cell preparing started with index {}", cell.getIndex());
-        cell.markAsProcessing();
-        Stack<Token> operands = new Stack<>();
-        Stack<Token> operators = new Stack<>();
-        Optional<Token> next;
-        while ((next = lexer.next()).isPresent()) {
-            Token nextToken = next.get();
-            if (nextToken.getType() == OPERATION) {
-                operators.push(nextToken);
-            } else {
-                operands.push(nextToken);
+        try {
+            log.debug("Cell preparing started with index {}", cell.getIndex());
+            cell.markAsProcessing();
+            Stack<Token> operands = new Stack<>();
+            Stack<Token> operators = new Stack<>();
+            Optional<Token> next;
+            while ((next = lexer.next()).isPresent()) {
+                Token nextToken = next.get();
+                if (nextToken.getType() == OPERATION) {
+                    operators.push(nextToken);
+                } else {
+                    operands.push(nextToken);
+                }
             }
+            if (operands.isEmpty()) {
+                throw new ParserException(TOKENS_NOT_FOUND, this);
+            }
+            cell.refreshLexerInfo();
+            if (operators.isEmpty()) {
+                prepareOnlyOperands(this, operands);
+            } else {
+                prepareOperatorsAndOperands(this, operands, operators);
+            }
+            log.debug("Cell preparing finished with index {}", cell.getIndex());
+        } finally {
+            cell.unmarkAsProcessing();
         }
-        if (operands.isEmpty()) {
-            throw new ParserException(TOKENS_NOT_FOUND, this);
-        }
-        cell.refreshLexerInfo();
-        if (operators.isEmpty()) {
-            prepareOnlyOperands(this, operands);
-        } else {
-            prepareOperatorsAndOperands(this, operands, operators);
-        }
-        log.debug("Cell preparing finished with index {}", cell.getIndex());
-        cell.unmarkAsProcessing();
     }
 
     private void collapse() {
