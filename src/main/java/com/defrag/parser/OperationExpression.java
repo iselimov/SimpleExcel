@@ -8,17 +8,14 @@ import java.util.function.BinaryOperator;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import static com.defrag.parser.ParserException.Error.DIVIDING_BY_ZERO;
-import static com.defrag.parser.ParserException.Error.INTEGER_OVERFLOW;
-import static com.defrag.parser.ParserException.Error.OPERATION_INVALID_ARGS;
-import static com.defrag.parser.ParserException.Error.UNKNOWN_OPERATION;
+import static com.defrag.parser.ParserException.Error.*;
 
 /**
  * Operation node of AST
  */
 class OperationExpression extends Expression {
 
-    private final OperationType operationType;
+    final OperationType operationType;
     @Getter @Setter private Expression left;
     private int leftVal = Integer.MIN_VALUE;
     @Getter @Setter private Expression right;

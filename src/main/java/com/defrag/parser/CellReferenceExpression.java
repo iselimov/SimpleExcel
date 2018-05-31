@@ -12,15 +12,9 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.Optional;
 import java.util.Stack;
 
-import static com.defrag.lexer.Token.Type.DIGIT;
-import static com.defrag.lexer.Token.Type.LITERAL;
-import static com.defrag.lexer.Token.Type.OPERATION;
-import static com.defrag.lexer.Token.Type.REFERENCE;
+import static com.defrag.lexer.Token.Type.*;
 import static com.defrag.parser.Expression.Type.CELL_REFERENCE;
-import static com.defrag.parser.ParserException.Error.CYCLE_WAS_FOUND;
-import static com.defrag.parser.ParserException.Error.OPERATION_INVALID_ARGS;
-import static com.defrag.parser.ParserException.Error.TOKENS_NOT_FOUND;
-import static com.defrag.parser.ParserException.Error.TOO_MANY_TOKENS;
+import static com.defrag.parser.ParserException.Error.*;
 
 /**
  * The cell reference node of AST, which encapsulates preparing AST for parsing
@@ -77,7 +71,7 @@ class CellReferenceExpression extends Expression {
         }
     }
 
-    private void prepare() {
+    void prepare() {
         if (cell.isHandled()) {
             return;
         }
